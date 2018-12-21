@@ -61,6 +61,7 @@
      <Compile Include="Assets\Scripts\Platformer\GameController.cs" />
      <Compile Include="Assets\Scripts\Platformer\PhysicsObject.cs" />
      <Compile Include="Assets\Scripts\Platformer\PlayerPlatformerController.cs" />
+     <Compile Include="Assets\Scripts\Platformer\SocketTest.cs" />
  <Reference Include="UnityEditor.StandardEvents">
  <HintPath>C:/Users/andre/Code/Granada/Library/ScriptAssemblies/UnityEditor.StandardEvents.dll</HintPath>
  </Reference>
