@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System;
 using System.Globalization;
+using System.Threading;
 
 public class SocketTest {
 
@@ -13,8 +14,7 @@ public class SocketTest {
         string peerIp;
         int peerPort;
 
-        int localPort = 19375;
-        UdpClient client = new UdpClient(localPort);
+        UdpClient client = new UdpClient();
         Console.WriteLine("created socket");
 
         //IPEndPoint object will allow us to read datagrams sent from any source.
@@ -37,17 +37,18 @@ public class SocketTest {
             peerPort = Int32.Parse(splitAddress[1], NumberStyles.Integer);
             Console.WriteLine("peer address is: " + peerIp + " " + peerPort);
 
-            // connect to peer
-            client.Send(sendBytes, sendBytes.Length, peerIp, peerPort);
-            Console.WriteLine("sent data to peer");
-
-            receiveBytes = client.Receive(ref ipEndPoint);
-            string peerResponse = Encoding.ASCII.GetString(receiveBytes);
-            Console.WriteLine("recieved " + peerResponse + " from peer");
-
             // start thread to recieve peer data
-            //Thread listenThread = new Thread(() => ListenThread(peerResponse));
-            //listenThread.Start();
+            Thread listenThread = new Thread(() => ListenThread(client, peerIp, peerPort));
+            listenThread.Start();
+
+            String msg = "";
+            Console.WriteLine("Type and press enter to speak to the peer.\n");
+
+            while (true) {
+                msg = Console.ReadLine();
+                sendBytes = Encoding.ASCII.GetBytes(msg);
+                client.Send(sendBytes, sendBytes.Length, peerIp, peerPort);
+            }
 
             client.Close();
         } catch (Exception e ) {
@@ -56,7 +57,15 @@ public class SocketTest {
         }
     }
 
-    public void ListenThread(String addr, int port) {
-        return;
+    public static void ListenThread(UdpClient socket, String addr, int port) {
+        Byte[] receiveBytes;
+
+        IPEndPoint peerEndPoint = new IPEndPoint(IPAddress.Parse(addr), port);
+
+        while (true) {
+            receiveBytes = socket.Receive(ref peerEndPoint);
+            string peerResponse = Encoding.ASCII.GetString(receiveBytes);
+            Console.WriteLine("recieved " + peerResponse + " from peer");
+        }
     }
 }
