@@ -7,7 +7,7 @@ using System.Globalization;
 public class SocketTest {
 
     private static string RENDEZVOUS_SERVER_IP = "52.15.150.22";
-    private static int RENDEZVOUS_SERVER_PORT = 200;
+    private static int RENDEZVOUS_SERVER_PORT = 8050;
 
     static void Main() {
         string peerIp;
@@ -35,19 +35,28 @@ public class SocketTest {
             string[] splitAddress = returnData.Split(null);
             peerIp = splitAddress[0];
             peerPort = Int32.Parse(splitAddress[1], NumberStyles.Integer);
+            Console.WriteLine("peer address is: " + peerIp + " " + peerPort);
 
             // connect to peer
             client.Send(sendBytes, sendBytes.Length, peerIp, peerPort);
+            Console.WriteLine("sent data to peer");
 
             receiveBytes = client.Receive(ref ipEndPoint);
             string peerResponse = Encoding.ASCII.GetString(receiveBytes);
             Console.WriteLine("recieved " + peerResponse + " from peer");
 
             // start thread to recieve peer data
+            //Thread listenThread = new Thread(() => ListenThread(peerResponse));
+            //listenThread.Start();
 
             client.Close();
         } catch (Exception e ) {
+            Console.WriteLine("Exception!");
             Console.WriteLine(e.ToString());
         }
+    }
+
+    public void ListenThread(String addr, int port) {
+        return;
     }
 }
