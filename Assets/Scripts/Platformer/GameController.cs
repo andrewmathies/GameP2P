@@ -37,12 +37,12 @@ public class GameController : MonoBehaviour {
         UdpClient client = new UdpClient();
         Debug.Log("created socket");
 
+        // thread to get peer addr from rendezvous server
         StartCoroutine(ConnectToPeer(client));
 
         // start threads to send and recieve data to and from peer
         StartCoroutine(Send(client));
         StartCoroutine(Listen(client));
-
     }
 
     private IEnumerator ConnectToPeer(UdpClient client) {
@@ -52,11 +52,20 @@ public class GameController : MonoBehaviour {
         try {
             // connect to server
             Byte[] sendBytes = Encoding.ASCII.GetBytes("hello");
+            Byte[] receiveBytes;
 
             client.Send(sendBytes, sendBytes.Length, RENDEZVOUS_SERVER_IP, RENDEZVOUS_SERVER_PORT);
-            Debug.Log("sent data to server");
+            Debug.Log("sent data to server, waiting for response");
 
-            Byte[] receiveBytes = client.Receive(ref ipEndPoint); 
+            while (true) {
+                if (client.Available > 0) {
+                    receiveBytes = client.Receive(ref ipEndPoint);
+                    break;
+                }
+
+                yield return null;
+            }
+
             string returnData = Encoding.ASCII.GetString(receiveBytes);
             Debug.Log("recieved data from server");
 
@@ -65,9 +74,9 @@ public class GameController : MonoBehaviour {
             peerIp = splitAddress[0];
             peerPort = Int32.Parse(splitAddress[1], NumberStyles.Integer);
             Debug.Log("peer address is: " + peerIp + " " + peerPort);
-        } catch (Exception e) {
-            Debug.Log("Exception!");
-            Debug.Log(e.ToString());
+        } finally {
+            // not sure why I need this, but compiler complained about yield return null if this wasn't here
+            Debug.Log("done");
         }
 
         yield return new WaitForFixedUpdate();
@@ -75,7 +84,9 @@ public class GameController : MonoBehaviour {
 
     private IEnumerator Send(UdpClient socket) {
         while (peerPort == -1)
-            yield return new WaitForFixedUpdate();
+            yield return null;
+
+        Debug.Log("started sending on peer connection");
 
         while (true) {
             Vector2 pos = curPlayer.transform.position;
@@ -88,11 +99,23 @@ public class GameController : MonoBehaviour {
 
     private IEnumerator Listen(UdpClient socket) {
         while (peerPort == -1)
-            yield return new WaitForFixedUpdate();
+            yield return null;
+
+        Debug.Log("started listening on peer connection");
+        Byte[] receiveBytes;
 
         while (true) {
             IPEndPoint peerEndPoint = new IPEndPoint(IPAddress.Parse(peerIp), peerPort);
-            Byte[] receiveBytes = socket.Receive(ref peerEndPoint);
+
+            while (true) {
+                if (socket.Available > 0) {
+                    receiveBytes = socket.Receive(ref peerEndPoint);
+                    break;
+                }
+
+                yield return null;
+            }
+
             string peerResponse = Encoding.ASCII.GetString(receiveBytes);
             Debug.Log("recieved " + peerResponse + " from peer");
             
@@ -111,6 +134,8 @@ public class GameController : MonoBehaviour {
             } catch (Exception e) {
                 Debug.Log(e.ToString());
             }
+
+            yield return new WaitForFixedUpdate();
         }
     }
 }
