@@ -91,9 +91,10 @@ public class GameController : MonoBehaviour {
         while (true) {
             Vector2 pos = curPlayer.transform.position;
             String msg = pos.ToString("F3");
+            //Debug.Log("sending " + msg);
             Byte[] sendBytes = Encoding.ASCII.GetBytes(msg);
             socket.Send(sendBytes, sendBytes.Length, peerIp, peerPort);
-            yield return new WaitForFixedUpdate();
+            yield return null;
         } 
     }
 
@@ -103,10 +104,9 @@ public class GameController : MonoBehaviour {
 
         Debug.Log("started listening on peer connection");
         Byte[] receiveBytes;
+        IPEndPoint peerEndPoint = new IPEndPoint(IPAddress.Parse(peerIp), peerPort);
 
         while (true) {
-            IPEndPoint peerEndPoint = new IPEndPoint(IPAddress.Parse(peerIp), peerPort);
-
             while (true) {
                 if (socket.Available > 0) {
                     receiveBytes = socket.Receive(ref peerEndPoint);
@@ -117,7 +117,7 @@ public class GameController : MonoBehaviour {
             }
 
             string peerResponse = Encoding.ASCII.GetString(receiveBytes);
-            Debug.Log("recieved " + peerResponse + " from peer");
+            //Debug.Log("recieved " + peerResponse);
             
             // parsing position from response
             MatchCollection mc = Regex.Matches(peerResponse, @"-?\d+.\d{3}");
@@ -135,7 +135,7 @@ public class GameController : MonoBehaviour {
                 Debug.Log(e.ToString());
             }
 
-            yield return new WaitForFixedUpdate();
+            yield return null;
         }
     }
 }
