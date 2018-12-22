@@ -18,6 +18,7 @@ public class GameController : MonoBehaviour {
 
     private string peerIp;
     private int peerPort;
+    private GameData localPlayerData, otherPlayerData;
 
     public void Reset()
     {
@@ -33,6 +34,9 @@ public class GameController : MonoBehaviour {
 
     public void Start() {
         peerPort = -1;
+
+        localPlayerData = new GameData(curPlayer.transform.position.x, curPlayer.transform.position.y);
+        otherPlayerData = new GameData(opponent.transform.position.x, opponent.transform.position.y);
 
         UdpClient client = new UdpClient();
         Debug.Log("created socket");
@@ -90,9 +94,13 @@ public class GameController : MonoBehaviour {
 
         while (true) {
             Vector2 pos = curPlayer.transform.position;
-            String msg = pos.ToString("F3");
+            localPlayerData.Position = pos;
+            // player controller needs to track state, get it here and update localPlayerData
+
+            String jsonMsg = JsonUtility.ToJson(localPlayerData);
+
             //Debug.Log("sending " + msg);
-            Byte[] sendBytes = Encoding.ASCII.GetBytes(msg);
+            Byte[] sendBytes = Encoding.ASCII.GetBytes(jsonMsg);
             socket.Send(sendBytes, sendBytes.Length, peerIp, peerPort);
             yield return null;
         } 
@@ -119,21 +127,8 @@ public class GameController : MonoBehaviour {
             string peerResponse = Encoding.ASCII.GetString(receiveBytes);
             //Debug.Log("recieved " + peerResponse);
             
-            // parsing position from response
-            MatchCollection mc = Regex.Matches(peerResponse, @"-?\d+.\d{3}");
-            var matches = new string[mc.Count];
-            for (int i = 0; i < matches.Length; i++)
-                matches[i] = mc[i].ToString();
-
-            float x = 0f, y = 0f;
-
-            try {
-                x = float.Parse(matches[0]);
-                y = float.Parse(matches[1]);
-                opponent.transform.position = new Vector2(x, y);
-            } catch (Exception e) {
-                Debug.Log(e.ToString());
-            }
+            otherPlayerData = JsonUtility.FromJson<GameData>(peerResponse);
+            opponent.transform.position = otherPlayerData.Position;
 
             yield return null;
         }
