@@ -7,13 +7,17 @@ using System;
 using System.Globalization;
 using System.Threading;
 using UnityEngine;
+using System.Text.RegularExpressions;
 
 public class GameController : MonoBehaviour {
 
-    public GameObject curPlayer, playerPrefab, mainCamera;
-
     private static string RENDEZVOUS_SERVER_IP = "52.15.150.22";
     private static int RENDEZVOUS_SERVER_PORT = 8050;
+
+    public GameObject curPlayer, playerPrefab, mainCamera, opponent;
+
+    private string peerIp;
+    private int peerPort;
 
     public void Reset()
     {
@@ -28,12 +32,20 @@ public class GameController : MonoBehaviour {
     }
 
     public void Start() {
-        string peerIp;
-        int peerPort;
+        peerPort = -1;
 
         UdpClient client = new UdpClient();
         Debug.Log("created socket");
 
+        StartCoroutine(ConnectToPeer(client));
+
+        // start threads to send and recieve data to and from peer
+        StartCoroutine(Send(client));
+        StartCoroutine(Listen(client));
+
+    }
+
+    private IEnumerator ConnectToPeer(UdpClient client) {
         //IPEndPoint object will allow us to read datagrams sent from any source.
         IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
@@ -53,42 +65,52 @@ public class GameController : MonoBehaviour {
             peerIp = splitAddress[0];
             peerPort = Int32.Parse(splitAddress[1], NumberStyles.Integer);
             Debug.Log("peer address is: " + peerIp + " " + peerPort);
-
-            // start thread to recieve peer data
-            StartCoroutine(Send(client, peerIp, peerPort));
-            StartCoroutine(Listen(client, peerIp, peerPort));
-
-            client.Close();
-        } catch (Exception e ) {
+        } catch (Exception e) {
             Debug.Log("Exception!");
             Debug.Log(e.ToString());
         }
 
-        // open socket, send message to server
-        // do same stuff as python client, send message to address found in server response
-        // serialize player x,y and state into string, send through socket
-        // start thread to listen on socket for message, deserialize other player data
-        // move around player using deserialized data
+        yield return new WaitForFixedUpdate();
     }
 
-    private IEnumerator Send(UdpClient socket, String addr, int port) {
+    private IEnumerator Send(UdpClient socket) {
+        while (peerPort == -1)
+            yield return new WaitForFixedUpdate();
+
         while (true) {
             Vector2 pos = curPlayer.transform.position;
             String msg = pos.ToString("F3");
             Byte[] sendBytes = Encoding.ASCII.GetBytes(msg);
-            socket.Send(sendBytes, sendBytes.Length, addr, port);
+            socket.Send(sendBytes, sendBytes.Length, peerIp, peerPort);
             yield return new WaitForFixedUpdate();
         } 
     }
 
-    private IEnumerator Listen(UdpClient socket, String addr, int port) {
-        socket.Client.ReceiveTimeout = 2000;
+    private IEnumerator Listen(UdpClient socket) {
+        while (peerPort == -1)
+            yield return new WaitForFixedUpdate();
 
         while (true) {
-            IPEndPoint peerEndPoint = new IPEndPoint(IPAddress.Parse(addr), port);
+            IPEndPoint peerEndPoint = new IPEndPoint(IPAddress.Parse(peerIp), peerPort);
             Byte[] receiveBytes = socket.Receive(ref peerEndPoint);
             string peerResponse = Encoding.ASCII.GetString(receiveBytes);
             Debug.Log("recieved " + peerResponse + " from peer");
+            
+            // parsing position from response
+            MatchCollection mc = Regex.Matches(peerResponse, @"-?\d+.\d{3}");
+            var matches = new string[mc.Count];
+            for (int i = 0; i < matches.Length; i++)
+                matches[i] = mc[i].ToString();
+
+            float x = 0f, y = 0f;
+
+            try {
+                x = float.Parse(matches[0]);
+                y = float.Parse(matches[1]);
+                opponent.transform.position = new Vector2(x, y);
+            } catch (Exception e) {
+                Debug.Log(e.ToString());
+            }
         }
     }
 }
