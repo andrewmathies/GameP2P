@@ -1,5 +1,5 @@
 # GameP2P
-[!alt-text](https://camo.githubusercontent.com/2bcc9106bf8b9f021e536549084e9b48e461400d/687474703a2f2f692e696d6775722e636f6d2f645a4e456870772e706e67)
+![alt-text](https://camo.githubusercontent.com/2bcc9106bf8b9f021e536549084e9b48e461400d/687474703a2f2f692e696d6775722e636f6d2f645a4e456870772e706e67)
 
 This is a Unity project demonstrating a peer-to-peer UDP game protocol. Code can be found at Assets/Scripts, the file with network code can be found at Assets/Scripts/Platformer/SocketTest.cs. 
 
