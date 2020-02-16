@@ -1,7 +1,7 @@
 # GameP2P
 ![alt-text](https://camo.githubusercontent.com/2bcc9106bf8b9f021e536549084e9b48e461400d/687474703a2f2f692e696d6775722e636f6d2f645a4e456870772e706e67)
 
-This is a Unity project demonstrating a peer-to-peer UDP game protocol. Code can be found at Assets/Scripts, the file with network code can be found at Assets/Scripts/Platformer/SocketTest.cs. 
+This is a Unity project demonstrating a peer-to-peer UDP game protocol. Relevant game code is at Assets/Scripts/Platformer/GameController.cs
 
 The protocol works by first having the client contact a UDP rendezvous server hosted on an AWS EC2 instance. This is done so a connection is opened through any NAT's a user is acccessing the internet behind. When the rendezvous server has two open connections with clients, it sends the public address of the other client to each and then terminates the connections. After that the two clients establish a connection with each other using the open ports they used to contact the server.
 
